@@ -1,0 +1,495 @@
+#"Archival Metadata Recorder"
+#
+#${1} is the full path of the directory to be recorded.
+###################################
+#888="Version 1 - 2023-12-12_(2)"
+_888="Version 2 - 2023-12-13_(3)" #　（This version）
+###################################
+
+
+
+
+#◆MAN PAGE◆
+#User Manual
+if [[ "${1}" = "-help"      ]] || \
+   [[ "${1}" = "－ｈｅｌｐ" ]] || \
+   [[ "${1}" = "-HELP"      ]] || \
+   [[ "${1}" = "－ｈ"       ]] || \
+   [[ "${1}" = "-888"       ]] || \
+   [[ "${1}" = "-８８８"    ]] || \
+   [[ "${1}" = "-h"         ]] ; then 
+
+    echo '================================'
+    echo '   Archival Metadata Recorder   '
+    echo '--------------------------------'
+    echo '　　　　　　　　　　　　　　　　'
+    echo 'Insert the full path of the     '
+    echo 'directory to be recorded.     　'  
+    echo '　　　　　　　　　　　　　　　　'
+    echo 'Hard Drive Number is taken      '
+    echo 'from a document named "888"     '
+    echo 'from the root of the hard drive.'
+    echo 'If the document is not found,   '
+    echo 'the Hard Drive Number will not  '
+    echo 'be recorded.                    '
+    echo '--------------------------------'
+    echo '　　　　　　　　　　　　　　　　'
+    echo '-OPTIONS                        '
+    echo '　　　　　　　　　　　　　　　　'
+    echo '　-h --help    Display Help Page'
+    echo '　　　　　　　　　　　　　　　　'
+    echo '　   -88816    Display Help Page'
+    echo '　　            of "V16"        '
+    echo '--------------------------------'
+    echo '${_888}'
+    echo '================================'
+    exit 8
+
+elif [[ "${1}" = "-88816"       ]] || \
+     [[ "${1}" = "-h-V16" ]] ;  then
+
+    echo -e "\e[91m================================\e[0m"
+    echo -e "\e[91m=========※ HELP V16 ※=========\e[0m"
+    echo -e "\e[97m$(./V16 -888)\e[0m"
+    echo -e "\e[91m================================\e[0m"
+    exit 8
+
+fi
+
+#◆TEST◆
+#Test if the directory provided exists.
+if [[ ! -e ${1} ]] ; then 
+
+    echo -e "\e[31m ${1} does not exit.\e[0m"
+    exit 4
+
+fi
+
+
+
+
+#◆TEST "Hard Drive Number"◆
+#Test if "Hard Drive Number Document" exists.
+if [[ ! -e $(echo "${1}" | sed 's/\/.*/\//g' | sed 's/\\.*/\//g')888 ]] ; then 
+
+    #If it does not exist, ask if a new one shall be created.
+    read -p $'\e[97mHard Drive Number Document not found, shall a new one be created? (Y/n):\e[0m' _1
+
+    #If user answers "Yes", create new Hard Drive Number Document
+    if [[ ${_1} = "Yes" ]] || \
+       [[ ${_1} = "Y"  ]]  ; then
+
+        #Ask for new Hard Drive Number.
+        echo -e        "================================"
+        echo -e "\e[31mA Hard Drive Number must be \e[0m"
+        echo -e "\e[31mphysically labeled on the Hard Drive.\e[0m"
+
+        while true ; do
+
+            read -N 2 -p $'\e[97mNew Hard Drive Number:\e[0m' _2
+
+            #If user does not give an ASCII two digit number, give error signal as below.
+            if [[ ! "${_2}" =~ ^[0-9][0-9]$ ]]; then
+
+                echo -e ""
+                echo -e "\e[31m※A Hard Drive Number must be a two digit number.\e[0m"
+                continue
+
+            #If user gives an ASCII two digit number, ask for confirmation and create Hard Drive Number Document.
+            else 
+
+                echo -e ""
+                echo -e "================================"
+                read -p "$(echo -e "\e[34mCreate Hard Drive Number Document for drive \e[93m"${_2}"\e[34m ?:\e[0m")" _T2
+
+                if [[ ${_T2} = "Yes" ]] || \
+                   [[ ${_T2} = "Y"  ]] ;  then 
+
+                    echo "${_2}" > $(echo "${1}" | sed 's/\/.*/\//g' | sed 's/\\.*/\//g')888
+                    HDN=${_2}
+                    echo -e "Hard Drive Number Document of drive \e[34m "${_2}" \e[0m had been created."
+                    break
+
+                else
+
+                    echo -e "================================"
+
+                fi
+
+            fi
+
+        done
+
+    else 
+
+        HDN=NA
+
+    fi
+
+else
+
+    #Import Hard Drive Number from file named "888" in root of hard drive.
+    HDN=$(<$(echo "${1}" | sed 's/\/.*/\//g' | sed 's/\\.*/\//g')888)
+
+fi
+
+
+
+
+
+#◆TEST◆
+#Test if "V16" (video thumbnail sheet creator) exists, if not, state the error and exit.
+if [[ ! -e "V16" ]] ; then 
+
+    echo -e         "================================"
+    echo -e "\e[31m※ V16 Not Found.※\e[0m"
+    echo -e         "================================"
+    exit 1
+
+fi
+
+
+
+
+
+###################################
+
+
+
+
+
+#Capture date.
+DT=$(date +%Y%m%d-%u_T%H%M%S_UCT%:::z-24HrClock)
+SECONDS=0
+
+
+
+
+#Create a file name for the "Complete File List". Characters such as "\/:" will be substituted.
+A=$(echo "${1}" | sed 's/\//__/g' | sed 's/\\/__/g' | sed 's/:/_-_/g')
+
+
+
+
+#Create "Complete File List."
+echo -e "================================"
+echo -e "※Creating "Complete File List" for \e[34m"${1}"\e[0m in Hard Drive \e[34m ${HDN} \e[0m"
+echo -e "================================"
+find "${1}" > "${A}_${HDN}_${DT}.txt"
+
+
+
+
+#Add quotation marks for each line in the "Complete File List."
+#Does not seem to work. Cancel.
+#perl -p -i -e 's/(^.*?$)/\x22$1\x22/g;' "${A}_${HDN}_${DT}.txt"
+#rm "${A}_${HDN}_${DT}.txt.bak"
+
+#Convert all "\"s to "/"s in the "Complete File List."
+sed -i 's/\\/\//g' "${A}_${HDN}_${DT}.txt"
+
+
+
+#Create a directory for placing thumbnails.
+mkdir "${A}_${HDN}_${DT}_VISUAL"
+
+#Copy V16 to the directory for placing thumbnails.
+cp "V16" ./"${A}_${HDN}_${DT}_VISUAL/V16"
+
+
+
+
+
+###################################
+
+
+
+
+
+#Count number of lines in the "Complete File List", set it as the end-number of while true.
+EndN="$(wc -l < "${A}_${HDN}_${DT}.txt")"
+
+#Set the initial "Now Number" for while true as 0.
+NN=0
+
+#print the number of lines in the "Complete File List", 
+#which is also the number of items to be recorded.
+echo -e "※Items found:   \e[94m"${EndN}"\e[0m"
+echo -e ""
+
+
+while true ; do 
+
+    #Calculate the present line number (or the "Now Number") to be dealt with.
+    NN=$((${NN}+1))
+
+    #Print the present line number.
+    echo -e "\e[1A\e[K※Recording item:\e[97m"${NN}"\e[0m"
+
+    #set variable $LC to be the full path taken from the present line number of the "Complete File List."
+    LC=$(sed -n "${NN}p" "${A}_${HDN}_${DT}.txt")
+
+
+    #◆TEST◆
+    #Test if the full path taken from the present line number indeed belongs to the right hard drive.
+    #if not, state error and exit.
+    if [[ ${HDN} = "NA" ]] ; then 
+
+        :
+
+    elif [[ ! "$(echo $(<$(printf "${LC}" | sed 's/\/.*/\//g' | sed 's/\\.*/\//g' | sed 's/\"//g' | sed 's/\x27//g')888))" = ${HDN} ]] ; then
+
+        echo -e "\e[31mHard Drive Number incorrect\e[0m"
+        echo -e "Hard Drive Number Found "$(echo $(<$(echo "${LC}" | sed 's/\/.*/\//g' | sed 's/\\.*/\//g')888))", Hard Drive Number Given ${HDN}."
+        exit 2
+
+    fi
+
+
+
+
+    #If the full path taken from the present line number is a directory, record the directory.
+    if   [[ -d "${LC}" ]] ; then
+
+
+        #Import Date Created.
+        CrDa=$(stat -c %w "${LC}" | sed 's/\..*//g' | sed 's/ /_/g')
+          #◆TEST◆
+          [[ ! ${CrDa} =~ ^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]:[0-9][0-9]:[0-9][0-9]$ ]] && \
+          >&2 echo -e "\e[31mDate Created of directory ${LC} not found.\e[0m" &&
+          exit 41
+
+        #Import Date Modified.
+        MdDa=$(stat -c %y "${LC}" | sed 's/\..*//g' | sed 's/ /_/g')
+          #◆TEST◆
+          [[ ! ${MdDa} =~ ^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]:[0-9][0-9]:[0-9][0-9]$ ]] && \
+          >&2 echo -e "\e[31mDate Modified of directory ${LC} not found.\e[0m" &&
+          exit 42
+
+        #Import Date Accessed.
+        AcDa=$(stat -c %x "${LC}" | sed 's/\..*//g' | sed 's/ /_/g')
+          #◆TEST◆
+          [[ ! ${AcDa} =~ ^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]:[0-9][0-9]:[0-9][0-9]$ ]] && \
+          >&2 echo -e "\e[31mDate Accessed of directory ${LC} not found.\e[0m" &&
+          exit 43
+
+        #Record the meta data of the directory to the "Complete File List"
+        sed -i "${NN}bm;b;:m;s%\(.*\)%\1 DRIVE:\"${HDN}\" TYPE:\"DIR\" DATE-C:\"${CrDa}\" DATE-M:\"${MdDa}\" DATE-A:\"${AcDa}\"%g" "${A}_${HDN}_${DT}.txt"
+
+        #Delete variables.
+        CrDa=""
+        MdDa=""
+        AcDa=""
+
+
+    #If the full path taken from the present line number is a file, record the file.
+    elif [[ -f "${LC}" ]] ; then
+
+
+        #Import File Type.
+        Type=$(file -b --mime-type "${LC}")
+          #◆TEST◆
+          [[ ${Type} = "" ]] && \
+          >&2 echo -e "\e[31mFile type of file ${LC} not found.\e[0m" &&
+          exit 44
+
+        #Import Date Created.
+        CrDa=$(stat -c %w "${LC}" | sed 's/\..*//g' | sed 's/ /_/g')
+          #◆TEST◆
+          [[ ! ${CrDa} =~ ^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]:[0-9][0-9]:[0-9][0-9]$ ]] && \
+          >&2 echo -e "\e[31mDate Created of file ${LC} not found.\e[0m" &&
+          exit 45
+
+        #Import Date Modified.
+        MdDa=$(stat -c %y "${LC}" | sed 's/\..*//g' | sed 's/ /_/g')
+          #◆TEST◆
+          [[ ! ${MdDa} =~ ^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]:[0-9][0-9]:[0-9][0-9]$ ]] && \
+          >&2 echo -e "\e[31mDate Modified of file ${LC} not found.\e[0m" &&
+          exit 46
+
+        #Import Date Accessed.
+        AcDa=$(stat -c %x "${LC}" | sed 's/\..*//g' | sed 's/ /_/g')
+          #◆TEST◆
+          [[ ! ${AcDa} =~ ^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]:[0-9][0-9]:[0-9][0-9]$ ]] && \
+          >&2 echo -e "\e[31mDate Accessed of file ${LC} not found.\e[0m" &&
+          exit 47
+
+        #Import File Size.
+        Size=$(stat -c %s "${LC}")
+          #◆TEST◆
+          [[ ! ${Size} =~ ^[0-9]+$ ]] && \
+          >&2 echo -e "\e[31mFile Size of file ${LC} not found.\e[0m" &&
+          exit 48
+
+        SHA256="$(sha256sum "${LC}" | sed 's/ .*//g' | sed 's/\///g' |sed 's/\\//g')"
+          #◆TEST◆
+          [[ ! ${SHA256} =~ ^[0-9a-fA-F]+$ ]] || \
+          [[ ! $(wc -c <<< ${SHA256}) = 65 ]] && \
+          >&2 echo -e "\e[31mSHA256 vlaue of file ${LC} not found.\e[0m" &&
+          exit 49
+
+        #Record the meta data of the file to the "Complete File List"
+        sed -i "${NN}bm;b;:m;\
+            s%\(.*\)%\1 DRIVE:\"${HDN}\" TYPE:\"${Type}\" DATE-C:\"${CrDa}\" DATE-M:\"${MdDa}\" DATE-A:\"${AcDa}\" SIZE:\"${Size} BYTES\" SHA256:\"${SHA256}\"%g" \
+            "${A}_${HDN}_${DT}.txt"
+
+
+
+        #If file is an image, create thumbnail.
+        if [[ "$(file -b --mime-type "${LC}" | sed 's/\/.*//')" = "image" ]] ; then 
+
+            #Import image size
+            ImageSize="$(magick identify -verbose "${LC}" 2>> "${A}_${HDN}_${DT}_VISUAL/${A}_${HDN}_${DT}_ErrorLog.txt" | grep Geometry | sed 's/.*Geometry: //' | sed 's/+.*//')"
+            #◆TEST◆
+            if [[ ! ${ImageSize} =~ ^[0-9x]+$ ]] ; then 
+
+                echo "LINE "${NN}" , Image size of \"${LC}\" not found." >> "${A}_${HDN}_${DT}_VISUAL/${A}_${HDN}_${DT}_ErrorLog.txt"
+
+            #But if image size can be found.
+            else
+
+                sed -i "${NN}bm;b;:m;s%\(.*\)%\1 ImageSize:\"${ImageSize}\" %g" "${A}_${HDN}_${DT}.txt" \
+                2>> "${A}_${HDN}_${DT}_VISUAL/${A}_${HDN}_${DT}_ErrorLog.txt"
+
+                #Test width and hight of image, if both are less than 50 pixals, do not create thumbnail.
+                #◆TEST◆
+                if [[ $(echo ${ImageSize} | sed 's/x.*//g') -lt 50 ]] && \
+                   [[ $(echo ${ImageSize} | sed 's/.*x//g') -lt 50 ]] ;  then
+
+                    :
+
+                #else, create thumbnail. (Somehow ImageMagick will not let me save to an other directory, thus the "mv".)
+                else
+
+                    magick "${LC}" -quality 80% -thumbnail 200x \
+                           "$(echo "${LC}" | sed 's/.*\///' | sed 's/.*\\//')_${SHA256}_${HDN}_thumbnail.jpg" \
+                           2>> "${A}_${HDN}_${DT}_VISUAL/${A}_${HDN}_${DT}_ErrorLog.txt"
+
+                    mv  "$(echo "${LC}" | sed 's/.*\///' | sed 's/.*\\//')_${SHA256}_${HDN}_thumbnail.jpg" \
+                        "${A}_${HDN}_${DT}_VISUAL/$(echo "${LC}" | sed 's/.*\///' | sed 's/.*\\//')_${SHA256}_${HDN}_thumbnail.jpg" \
+                        2>> "${A}_${HDN}_${DT}_VISUAL/${A}_${HDN}_${DT}_ErrorLog.txt"
+
+                fi
+
+            fi
+
+        fi
+
+
+        #If file is a video, create video thumbnail sheet.
+        if [[ "$(file -b --mime-type "${LC}" | sed 's/\/.*//')" = "video" ]] ; then 
+
+            #create video thumbnail sheet in the directory for placing thumbnails.
+            (cd ./"${A}_${HDN}_${DT}_VISUAL" ; ./V16 "${LC}" 2>> "${A}_${HDN}_${DT}_ErrorLog.txt" > /dev/null)
+
+            #Import Video Duration and Video Size of video.
+            VideoDuration=$(ffmpeg -i "${LC}" 2>&1 | grep "Duration.*bitrate" | sed 's/,.*//' | sed 's/.* //' 2>> "${A}_${HDN}_${DT}_VISUAL/${A}_${HDN}_${DT}_ErrorLog.txt")
+            VideoSize=$(ffmpeg -i "${LC}" 2>&1 | perl -lane 'print $1 if /([0-9]{2,}x[0-9]+)/' 2>> "${A}_${HDN}_${DT}_VISUAL/${A}_${HDN}_${DT}_ErrorLog.txt")
+            #◆TEST◆
+            if [[ ! ${VideoSize} =~ ^[0-9x]+$ ]] ; then
+
+                echo "LINE "${NN}" , Video Size of \"${LC}\" not found." >> "${A}_${HDN}_${DT}_VISUAL/${A}_${HDN}_${DT}_ErrorLog.txt"
+
+            elif [[ ${VideoDuration} = "" ]] ; then 
+
+                echo "LINE "${NN}" , Video Duration of \"${LC}\" not found." >> "${A}_${HDN}_${DT}_VISUAL/${A}_${HDN}_${DT}_ErrorLog.txt"
+
+            #If test does not fail, record Video Duration and Video Size to "Complete File List."
+            else 
+
+                sed -i "${NN}bm;b;:m;s%\(.*\)%\1 VideoSize:\"${VideoSize}\" VideoDuration:\"${VideoDuration}\" %g" "${A}_${HDN}_${DT}.txt" \
+                2>> "${A}_${HDN}_${DT}_VISUAL/${A}_${HDN}_${DT}_ErrorLog.txt"
+
+            fi
+
+        fi
+
+
+        #If file is an audio, record audio duration.
+        if [[ "$(file -b --mime-type "${LC}" | sed 's/\/.*//')" = "audio" ]] ; then 
+
+            #Import Duration of audio.
+            AudioDuration=$(ffmpeg -i "${LC}" 2>&1 | grep "Duration.*bitrate" | sed 's/,.*//' | sed 's/.* //' 2>> "${A}_${HDN}_${DT}_VISUAL/${A}_${HDN}_${DT}_ErrorLog.txt")
+
+            #◆TEST◆
+            if [[ ${AudioDuration} = "" ]] ; then 
+
+                echo "LINE "${NN}" , Audio duration of \"${LC}\" not found." >> "${A}_${HDN}_${DT}_VISUAL/${A}_${HDN}_${DT}_ErrorLog.txt"
+
+            #If test does not fail, recored audio duration to "Complete File List."
+            else 
+
+                sed -i "${NN}bm;b;:m;s%\(.*\)%\1 AudioDuration:\"${AudioDuration}\" %g" "${A}_${HDN}_${DT}.txt" \
+                2>> "${A}_${HDN}_${DT}_VISUAL/${A}_${HDN}_${DT}_ErrorLog.txt"
+
+            fi
+
+        fi
+
+        #Delete variables.
+        ImageSize=""
+        VideoSize=""
+        VideoDuration=""
+        Type=""
+        CrDa=""
+        MdDa=""
+        AcDa=""
+        Size=""
+        SHA256=""
+
+
+    #If an empty line is found in the "Complete File List", do nothing for this line.
+    elif [[ "${LC}" = "" ]] ; then
+
+        :
+
+
+    #If the full path taken from the present line number is neither a file nor a directory, state the error and exit.
+    else
+
+        echo -e "\e[31mFile or directory "${LC}" not found.\e[0m"
+        exit 3
+
+
+    fi
+
+
+    #Delete variable "${LC}".
+    LC=""
+
+    #If the present line number is the last line of the "Complete File List", end while true loop.
+    if [[ ${NN}   = "${EndN}" ]] || \
+       [[ ${EndN} = "0"       ]] ;  then 
+
+        break
+
+    fi
+
+
+done
+
+
+#Create a log.
+echo "" >> "${A}_${HDN}_${DT}.txt"
+echo "" >> "${A}_${HDN}_${DT}.txt"
+echo "================================" | tee --append "${A}_${HDN}_${DT}.txt"
+echo "※ Archival Metadata Recorder ※" | tee --append "${A}_${HDN}_${DT}.txt"
+echo "--------------------------------" | tee --append "${A}_${HDN}_${DT}.txt"
+echo "${_888}"                          | tee --append "${A}_${HDN}_${DT}.txt"
+echo "================================" | tee --append "${A}_${HDN}_${DT}.txt"
+echo "Directory Recorded: ${1}"         | tee --append "${A}_${HDN}_${DT}.txt"
+echo "Items Recorded: "${EndN}""        | tee --append "${A}_${HDN}_${DT}.txt"
+echo "================================" | tee --append "${A}_${HDN}_${DT}.txt"
+echo "Proccess Time                   " | tee --append "${A}_${HDN}_${DT}.txt"
+echo "Start:　 ${DT}"                   | tee --append "${A}_${HDN}_${DT}.txt"
+echo "End:     $(date +%Y%m%d-%u_T%H%M%S_UCT%:::z-24HrClock)" | tee --append "${A}_${HDN}_${DT}.txt"
+echo "Elapsed: $((${SECONDS} / 3600)):$((${SECONDS} / 60)):$((${SECONDS} % 60))" | tee --append "${A}_${HDN}_${DT}.txt"
+echo "================================" | tee --append "${A}_${HDN}_${DT}.txt"
+echo "============※DONE※============" | tee --append "${A}_${HDN}_${DT}.txt"
+echo "================================" | tee --append "${A}_${HDN}_${DT}.txt"
+
+
+#Delete the copy of V16
+rm ./"${A}_${HDN}_${DT}_VISUAL/V16"
+
+#THE END
